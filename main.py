@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# 测试股票代码： 603956 300750 000002
+
+# In[1]:
+
 
 import requests
 from bs4 import BeautifulSoup
@@ -8,12 +12,13 @@ import re
 import os
 
 
+# In[2]:
 
 
 # 定义获取文件的函数
 
-# TODO：可以设置文件的类型
-def download_file(url, directory = ".", filename = None):
+
+def download_file(url, directory=".", filename=None):
     """
     从给定的url下载文件，保存到指定目录，保存为指定文件名
 
@@ -24,13 +29,13 @@ def download_file(url, directory = ".", filename = None):
     # 如果没有传文件名，则取url最后一段文字作为文件名
     if filename is None:
         filename = url.split('/')[-1]
-        
+
     # 构建完整的文件路径
     save_path = os.path.join(directory, f'{filename}.pdf')
 
     try:
-        os.makedirs(directory, exist_ok = True)
-        
+        os.makedirs(directory, exist_ok=True)
+
         # 发送GET请求
         response = requests.get(url)
 
@@ -41,12 +46,14 @@ def download_file(url, directory = ".", filename = None):
                 file.write(response.content)
             print(f"File downloaded successfully and saved as {save_path}")
         else:
-            print(f"Failed to download file: status code {response.status_code}")
+            print(
+                f"Failed to download file: status code {response.status_code}")
     except requests.RequestException as e:
         print(f"Error occurred: {e}")
 
 
-# # 下载年度报告
+# In[7]:
+
 
 def download_annual_reports(stockid, directory):
     """
@@ -55,14 +62,20 @@ def download_annual_reports(stockid, directory):
     # 一、定义相关变量
 
     # 1. 文件的下载地址
-    download_base_url = 'https://file.finance.sina.com.cn/211.154.219.97:9494/MRGG/CNSESZ_STOCK/'
+    download_base_url_sz = 'http://file.finance.sina.com.cn/211.154.219.97:9494/MRGG/CNSESZ_STOCK/'
+    download_base_url_sh = 'http://file.finance.sina.com.cn/211.154.219.97:9494/MRGG/CNSESH_STOCK/'
     # 2. 获取相关必要信息的地址
     url = f'https://vip.stock.finance.sina.com.cn/corp/go.php/vCB_Bulletin/stockid/{stockid}/page_type/ndbg.phtml'
+    # 3. 用于区分时深圳还是上海交易所
+    dict = {
+        "0": download_base_url_sz,
+        "3": download_base_url_sz,
+        "6": download_base_url_sh
+    }
 
     # 二、 获取信息
 
     # 1. 拿到HTMl内容
-    # TODO：异常处理一下 没有获取到会。。。
     response = requests.get(url)
     html = response.content
 
@@ -112,6 +125,8 @@ def download_annual_reports(stockid, directory):
                 'date': annual_report_date
             })
 
+    print(annual_reports)
+
     # 三、正式下载文件
     for report_info in annual_reports:
         date = report_info['date']
@@ -119,16 +134,20 @@ def download_annual_reports(stockid, directory):
         year = date[:4]
         month = int(date[5:7])
         params = f'{year}/{year}-{month}/{date}/{ids}.PDF'
-        download_url = download_base_url + params
+        download_url = dict[stockid[0]] + params
+        print(download_url)
         download_file(download_url, directory, report_info['name'])
 
 
-# # 使用
-
-user_input_stockid = input("请输入一些内容: ")
-directory = '/Users/kingwayliu/PycharmProjects/pythonProject/outputfile'
-download_annual_reports(user_input_stockid ,directory)
+# In[9]:
 
 
-
+directory = '/Users/kingwayliu/PycharmProjects/outputfile'
+while True:
+    user_input = input("请输e入股票代码（输入 'exit' 退出）: ")
+    if user_input.lower() == 'exit':
+        print("感谢您使用")
+        break
+    # 在这里执行你的代码
+    download_annual_reports(user_input, directory)
 
