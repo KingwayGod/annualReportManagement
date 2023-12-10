@@ -3,21 +3,13 @@
 
 # 测试股票代码： 603956 300750 000002
 
-# In[1]:
-
-
 import requests
 from bs4 import BeautifulSoup
 import re
 import os
 
 
-# In[2]:
-
-
 # 定义获取文件的函数
-
-
 def download_file(url, directory=".", filename=None):
     """
     从给定的url下载文件，保存到指定目录，保存为指定文件名
@@ -52,9 +44,6 @@ def download_file(url, directory=".", filename=None):
         print(f"Error occurred: {e}")
 
 
-# In[7]:
-
-
 def download_annual_reports(stockid, directory):
     """
     下载年度报告
@@ -85,69 +74,65 @@ def download_annual_reports(stockid, directory):
     # 3. 分析网页的元素 发现内容是包含在 class=datelist下的ul
     father_elements = soup.select_one('.datelist ul')
 
-    #所需要的数据在br的前面
-    children = father_elements.find_all('br')
+    try:
+        # 所需要的数据在br的前面
+        children = father_elements.find_all('br')
 
-    annual_reports = []
+        annual_reports = []
 
-    for child in children:
-        if child:
-            annual_report_name = ""
-            annual_report_id = ""
-            annual_report_date = ""
+        for child in children:
+            if child:
+                annual_report_name = ""
+                annual_report_id = ""
+                annual_report_date = ""
 
-            # 通过兄弟节点找到a标签 包含 名字 以及 id
-            sibling_ele = child.previous_sibling
+                # 通过兄弟节点找到a标签 包含 名字 以及 id
+                sibling_ele = child.previous_sibling
 
-            # 获取年报 名字
-            annual_report_name = sibling_ele.text
+                # 获取年报 名字
+                annual_report_name = sibling_ele.text
 
-            # 通过正则获取id
-            id_pattern = r'&id=(\d+)'  # id后多个数字，括号表示捕获组
-            id_match = re.search(id_pattern, sibling_ele['href'])
-            if id_match:
-                annual_report_id = id_match.group(1)  # 提取括号中的内容
+                # 通过正则获取id
+                id_pattern = r'&id=(\d+)'  # id后多个数字，括号表示捕获组
+                id_match = re.search(id_pattern, sibling_ele['href'])
+                if id_match:
+                    annual_report_id = id_match.group(1)  # 提取括号中的内容
 
-            #处理时间信息
+                # 处理时间信息
 
-            # 时间信息在这个节点的前面
-            date_raw = sibling_ele.previous_sibling.text
+                # 时间信息在这个节点的前面
+                date_raw = sibling_ele.previous_sibling.text
 
-            # 通过正则提取想要的yyyy-mm-dd的形式
-            date_pattern = r'\d{4}-\d{2}-\d{2}'  # 定义正则
-            date_match = re.search(date_pattern, date_raw)  # 寻找符合的字符串
-            if date_match:
-                annual_report_date = date_match.group()
+                # 通过正则提取想要的yyyy-mm-dd的形式
+                date_pattern = r'\d{4}-\d{2}-\d{2}'  # 定义正则
+                date_match = re.search(date_pattern, date_raw)  # 寻找符合的字符串
+                if date_match:
+                    annual_report_date = date_match.group()
 
-            annual_reports.append({
-                'name': annual_report_name,
-                'id': annual_report_id,
-                'date': annual_report_date
-            })
+                annual_reports.append({
+                    'name': annual_report_name,
+                    'id': annual_report_id,
+                    'date': annual_report_date
+                })
 
-    print(annual_reports)
-
-    # 三、正式下载文件
-    for report_info in annual_reports:
-        date = report_info['date']
-        ids = report_info['id']
-        year = date[:4]
-        month = int(date[5:7])
-        params = f'{year}/{year}-{month}/{date}/{ids}.PDF'
-        download_url = dict[stockid[0]] + params
-        print(download_url)
-        download_file(download_url, directory, report_info['name'])
-
-
-# In[9]:
+        # 三、正式下载文件
+        for report_info in annual_reports:
+            date = report_info['date']
+            ids = report_info['id']
+            year = date[:4]
+            month = int(date[5:7])
+            params = f'{year}/{year}-{month}/{date}/{ids}.PDF'
+            download_url = dict[stockid[0]] + params
+            download_file(download_url, directory, report_info['name'])
+    except AttributeError:
+        print('输入股票代码有误或该公司还没有年报，请重新输入！')
 
 
-directory = '/Users/kingwayliu/PycharmProjects/outputfile'
+output_path = '/Users/kingwayliu/PycharmProjects/outputfile'
 while True:
-    user_input = input("请输e入股票代码（输入 'exit' 退出）: ")
+    user_input = input("请输入股票代码（输入 'exit' 退出）: ")
     if user_input.lower() == 'exit':
         print("感谢您使用")
         break
-    # 在这里执行你的代码
-    download_annual_reports(user_input, directory)
-
+    download_path = os.path.join(output_path, user_input)  # 下载到以股票代码为名的文件夹中
+    download_annual_reports(user_input, download_path)
